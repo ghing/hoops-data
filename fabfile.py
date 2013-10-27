@@ -1,12 +1,13 @@
 import sys
 
 from fabric.api import local, task
+from fabric.contrib.console import confirm
 import requests
 
 import data
 
 @task
-def load_data(filename):
+def load_park_district_courts(filename):
     with open(filename, 'r') as csv_file:
         data.load_park_district_courts(csv_file)
 
@@ -18,6 +19,13 @@ def dump_park_district_courts(filename=None):
     else:
         with open(filename, 'w') as f:
             f.write(data.dump_park_district_courts())
+
+@task
+def clear_park_district_courts():
+    response = confirm("Are you sure you want to clear ALL park district courts?")
+    data.clear_park_district_courts()
+
+
 @task
 def validate_geojson(filename):
     validate_endpoint = 'http://geojsonlint.com/validate'

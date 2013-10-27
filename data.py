@@ -47,3 +47,6 @@ def dump_park_district_courts():
         'type': 'FeatureCollection',
         'features': [c.to_geojson() for c in ParkDistrictCourt.objects()],
     })
+
+def clear_park_district_courts():
+    ParkDistrictCourt.objects.delete()
