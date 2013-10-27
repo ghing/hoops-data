@@ -33,8 +33,7 @@ def load_park_district_courts(csv_file):
         lat, lng = split_location(row[location_index])
         court = ParkDistrictCourt(
             name=row[name_index],
-            # TODO: Figure out if this is correct syntax for PointField
-            point=[lat, lng],
+            point=[lng, lat],
             official_name=row[name_index],
             park_num=row[number_index],
             facility_type=row[type_index],
