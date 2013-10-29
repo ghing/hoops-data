@@ -23,7 +23,8 @@ def load_park_district_courts(csv_file):
     # resolves column indexes from their names
     name_index = 0
     number_index = 1 
-    type_index = 3
+    facility_name_index = 2
+    facility_type_index = 3
     location_index = 6
 
     filter_reader = FilteringCSVReader(rows, patterns=patterns, header=True)
@@ -36,17 +37,13 @@ def load_park_district_courts(csv_file):
             point=[lng, lat],
             official_name=row[name_index],
             park_num=row[number_index],
-            facility_type=row[type_index],
+            facility_name=row[facility_name_index],
+            facility_type=row[facility_type_index],
         )
         court.save()
 
 def dump_park_district_courts():
-    # HACK: Personally, I think this makes more sense to have this be with
-    # the model
-    return json.dumps({
-        'type': 'FeatureCollection',
-        'features': [c.to_geojson() for c in ParkDistrictCourt.objects()],
-    })
+    return ParkDistrictCourt.objects(facility_name__contains="BACKBOARD").to_geojson(.001)
 
 def clear_park_district_courts():
     ParkDistrictCourt.objects.delete()
