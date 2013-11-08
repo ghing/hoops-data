@@ -38,3 +38,7 @@ def validate_geojson(filename):
             sys.stdout.write("Valid GeoJSON")
         else:
             sys.stdout.write("Invalid GeoJSON")
+
+@task
+def load_census_data():
+    local("./bin/load_sqlite.sh P12 17 140 hoops.db")

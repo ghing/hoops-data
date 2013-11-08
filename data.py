@@ -4,7 +4,7 @@ import json
 from csvkit import CSVKitReader
 from csvkit.grep import FilteringCSVReader
 
-from models import ParkDistrictCourt
+from models.official import ParkDistrictCourt
 
 def split_location(val):
     # Remove whitespace, parenthesis from location column
