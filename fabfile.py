@@ -4,7 +4,7 @@ from fabric.api import local, task
 from fabric.contrib.console import confirm
 import requests
 
-import data
+from hoops_data import data
 
 @task
 def load_park_district_courts(filename):
