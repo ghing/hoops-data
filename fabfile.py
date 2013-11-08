@@ -42,3 +42,9 @@ def validate_geojson(filename):
 @task
 def load_census_data():
     local("./bin/load_sqlite.sh P12 17 140 hoops.db")
+
+@task
+def load_chicago_tract_shapes():
+    local("ogr2ogr -update -f SQLite "
+          "hoops.dbdata/CensusTracts2010/CensusTractsTIGER2010.shp")
+

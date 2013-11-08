@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.orm import Query
+from sqlalchemy.sql import exists
 
 from hoops_data.database import db_session 
 
@@ -13,10 +15,20 @@ class CensusTableMeta(DeclarativeMeta):
             setattr(cls, fname, dict_[fname])
         super(CensusTableMeta, cls).__init__(classname, bases, dict_)
 
-Base = declarative_base(metaclass=CensusTableMeta) 
+
+class P12TractQuery(Query):
+    def has_shape(self):
+        stmt = exists().where(TigerTract.geoid==P12Tract.geoid)
+        return self.filter(stmt)
+
+
+CensusTableBase = declarative_base(metaclass=CensusTableMeta) 
+CensusTableBase.query = db_session.query_property(query_cls=P12TractQuery)
+
+Base = declarative_base()
 Base.query = db_session.query_property()
 
-class Tract(Base):
+class P12Tract(CensusTableBase):
     __tablename__ = 'ire_p12'
 
     geoid = Column(String(12), primary_key=True)
@@ -85,3 +97,11 @@ class Tract(Base):
     def all_kids(self):
         return (self.all_under_5 + self.all_5_to_9 + self.all_10_to_14 +
                self.all_15_to_17 + self.all_18_to_19)
+
+
+
+class TigerTract(Base):
+    __tablename__ = 'censustractstiger2010'
+
+    ogc_fid = Column(Integer, primary_key=True)
+    geoid = Column('geoid10', String)
