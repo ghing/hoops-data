@@ -1,10 +1,10 @@
 from decimal import Decimal
-import json
 
 from csvkit import CSVKitReader
 from csvkit.grep import FilteringCSVReader
 
 from models.official import ParkDistrictCourt
+from models.census import TigerTract
 
 def split_location(val):
     # Remove whitespace, parenthesis from location column
@@ -43,7 +43,25 @@ def load_park_district_courts(csv_file):
         court.save()
 
 def dump_park_district_courts():
-    return ParkDistrictCourt.objects(facility_name__contains="BACKBOARD").to_geojson(.001)
+    return ParkDistrictCourt.objects(facility_name__contains="BACKBOARD").as_geojson(.001)
 
 def clear_park_district_courts():
     ParkDistrictCourt.objects.delete()
+
+def dump_tracts():
+    return TigerTract.query.as_geojson()
+
+def _tract_stats_row(tract):
+    return {
+        "geoid": tract.geoid,
+        "total": tract.p12_data.total,
+        "kids": tract.p12_data.all_kids,
+        "younger_kids": tract.p12_data.younger_kids,
+        "older_kids": tract.p12_data.older_kids,
+        "pct_older_kids": tract.p12_data.pct_older_kids,
+    }
+
+def dump_tract_stats_as_csv():
+    tracts = TigerTract.query.all()
+    rows = map(_tract_stats_row, tracts)
+    return rows

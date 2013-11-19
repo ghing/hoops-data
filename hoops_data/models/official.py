@@ -12,15 +12,17 @@ class Court(Document):
 
     meta = {'allow_inheritance': True}
 
-    def to_geojson(self):
-        json = {
+    def as_geojson_dict(self):
+        return {
             'type': 'Feature',
             'geometry': self.point,
             'properties': {
                  'name': self.name,
              },
         }
-        return json
+
+    def as_geojson(self):
+        return json.dumps(self.as_geojson_dict())
 
 class ParkDistrictCourtQuerySet(QuerySet):
     def cluster(self, radius):
@@ -53,7 +55,7 @@ class ParkDistrictCourtQuerySet(QuerySet):
 
         return clusters
 
-    def to_geojson(self, cluster_radius):
+    def as_geojson(self, cluster_radius):
         clusters = self.cluster(cluster_radius)
         simplified = []
         for cluster in clusters:

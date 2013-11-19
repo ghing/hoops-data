@@ -1,10 +1,17 @@
-from sqlalchemy import Column, Integer, String
+from __future__ import division
+
+import json
+
+from sqlalchemy import Column, Integer, String, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
-from sqlalchemy.orm import Query
-from sqlalchemy.sql import exists
+from sqlalchemy.orm import Query, relationship, foreign
+from geoalchemy import GeometryColumn, Geometry 
+import shapely.wkt
+from shapely.geometry import mapping
 
 from hoops_data.database import db_session 
+
 
 class CensusTableMeta(DeclarativeMeta):
     def __init__(cls, classname, bases, dict_):
@@ -16,22 +23,33 @@ class CensusTableMeta(DeclarativeMeta):
         super(CensusTableMeta, cls).__init__(classname, bases, dict_)
 
 
-class P12TractQuery(Query):
-    def has_shape(self):
-        stmt = exists().where(TigerTract.geoid==P12Tract.geoid)
-        return self.filter(stmt)
+class TractQuery(Query):
+    def as_geojson_dict(self):
+        return {
+            "type": "FeatureCollection",
+            "features": [feature.as_geojson_dict() for feature in self],
+        }
+
+    def as_geojson(self):
+        return json.dumps(self.as_geojson_dict())
 
 
-CensusTableBase = declarative_base(metaclass=CensusTableMeta) 
-CensusTableBase.query = db_session.query_property(query_cls=P12TractQuery)
+metadata = MetaData(db_session.get_bind())
 
-Base = declarative_base()
-Base.query = db_session.query_property()
+CensusTableBase = declarative_base(metaclass=CensusTableMeta, metadata=metadata)
+CensusTableBase.query = db_session.query_property()
 
-class P12Tract(CensusTableBase):
+Base = declarative_base(metadata=metadata)
+Base.query = db_session.query_property(query_cls=TractQuery)
+
+class P12Data(CensusTableBase):
     __tablename__ = 'ire_p12'
 
     geoid = Column(String(12), primary_key=True)
+
+    @property
+    def total(self):
+        return self.p012001
 
     @property
     def male_under_5(self):
@@ -98,6 +116,20 @@ class P12Tract(CensusTableBase):
         return (self.all_under_5 + self.all_5_to_9 + self.all_10_to_14 +
                self.all_15_to_17 + self.all_18_to_19)
 
+    @property
+    def younger_kids(self):
+        return self.all_under_5 + self.all_5_to_9
+
+    @property
+    def older_kids(self):
+        return self.all_10_to_14 + self.all_15_to_17
+
+    @property
+    def pct_older_kids(self):
+        if self.total > 0:
+            return self.older_kids / self.total
+
+        return 0
 
 
 class TigerTract(Base):
@@ -105,3 +137,28 @@ class TigerTract(Base):
 
     ogc_fid = Column(Integer, primary_key=True)
     geoid = Column('geoid10', String)
+    geom = GeometryColumn('GEOMETRY', Geometry(2))
+
+    def as_mapping(self):
+       return mapping(shapely.wkt.loads(db_session.scalar(self.geom.wkt)))
+
+    def as_geojson_dict(self):
+        return {
+            "type": "Feature",
+            "geometry": self.as_mapping(),
+            "properties": {
+                "geoid": self.geoid,
+                "total": self.p12_data.total,
+                "kids": self.p12_data.all_kids,
+                "younger_kids": self.p12_data.younger_kids,
+                "older_kids": self.p12_data.older_kids,
+                "pct_older_kids": self.p12_data.pct_older_kids,
+            }
+        }
+
+    def as_geojson(self):
+        return json.dumps(self.as_geojson_dict())
+
+TigerTract.p12_data = relationship(P12Data,
+            uselist=False,
+            primaryjoin=P12Data.geoid==foreign(TigerTract.geoid))

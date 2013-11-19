@@ -48,3 +48,11 @@ def load_chicago_tract_shapes():
     local("ogr2ogr -update -f SQLite "
           "hoops.dbdata/CensusTracts2010/CensusTractsTIGER2010.shp")
 
+@task
+def dump_tracts(filename):
+    if filename is None:
+        f = sys.stdout
+        f.write(data.dump_tracts())
+    else:
+        with open(filename, 'w') as f:
+            f.write(data.dump_tracts())
