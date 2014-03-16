@@ -1,7 +1,6 @@
 import sys
 
-from fabric.api import local, task
-from fabric.contrib.console import confirm
+from invoke import task, run
 import requests
 
 from hoops_data import data
@@ -22,8 +21,9 @@ def dump_park_district_courts(filename=None):
 
 @task
 def clear_park_district_courts():
-    response = confirm("Are you sure you want to clear ALL park district courts?")
-    data.clear_park_district_courts()
+    response = raw_input("Are you sure you want to clear ALL park district courts? (y/N)")
+    if response.strip().lower() != 'n':
+        data.clear_park_district_courts()
 
 
 @task
@@ -41,11 +41,11 @@ def validate_geojson(filename):
 
 @task
 def load_census_data():
-    local("./bin/load_sqlite.sh P12 17 140 hoops.db")
+    run("./bin/load_sqlite.sh P12 17 140 hoops.db")
 
 @task
 def load_chicago_tract_shapes():
-    local("ogr2ogr -update -f SQLite "
+    run("ogr2ogr -update -f SQLite "
           "hoops.dbdata/CensusTracts2010/CensusTractsTIGER2010.shp")
 
 @task
