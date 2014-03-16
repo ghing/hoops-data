@@ -65,3 +65,16 @@ def dump_tract_stats_as_csv():
     tracts = TigerTract.query.all()
     rows = map(_tract_stats_row, tracts)
     return rows
+
+def _aggregate_tract_stats(accumulated, current):
+    accumulated['younger_kids'] += current.p12_data.younger_kids
+    accumulated['older_kids'] += current.p12_data.older_kids
+    return accumulated
+
+def chicago_summary():
+    summary = {
+        'younger_kids': 0,
+        'older_kids': 0,
+    }
+    tracts = TigerTract.query.all()
+    return reduce(_aggregate_tract_stats, tracts, summary)
